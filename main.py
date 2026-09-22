@@ -53,9 +53,14 @@ df.loc[
     "genre_first"
 ] = "기타"
 
-# 총 관객 수를 숫자로 변환
+# 숫자형 데이터로 변환
 df["total_audi_num"] = pd.to_numeric(
     df["total_audi"],
+    errors="coerce"
+)
+
+df["first_scrn_num"] = pd.to_numeric(
+    df["first_scrn"],
     errors="coerce"
 )
 
@@ -198,10 +203,6 @@ st.plotly_chart(
 # --------------------------------------------------
 # 히스토그램에서 가장 많이 몰린 구간 계산
 # --------------------------------------------------
-min_audi = hist_df["total_audi_num"].min()
-max_audi = hist_df["total_audi_num"].max()
-
-# 히스토그램과 동일하게 15개 구간으로 나눔
 bins = pd.cut(
     hist_df["total_audi_num"],
     bins=15,
@@ -236,6 +237,65 @@ st.info(
     f"구간에 몰려 있으며, 이 구간에는 **{most_common_count}편**의 영화가 있습니다. "
     f"가장 관객이 많은 영화는 **{top_movie_names}**으로, "
     f"총 관객은 **{max_audi:,.0f}명**입니다."
+)
+
+
+# ==================================================
+# 네 번째 그래프
+# ==================================================
+st.divider()
+
+st.subheader("🔵 그래프 4. 개봉일 스크린 수와 총 관객의 관계")
+
+scatter_df = df.dropna(
+    subset=[
+        "first_scrn_num",
+        "total_audi_num",
+        "movieNm",
+        "genre_first"
+    ]
+).copy()
+
+fig4 = px.scatter(
+    scatter_df,
+    x="first_scrn_num",
+    y="total_audi_num",
+    color="genre_first",
+    hover_name="movieNm",
+    title="개봉일 스크린 수와 총 관객",
+    labels={
+        "first_scrn_num": "개봉일 스크린 수",
+        "total_audi_num": "총 관객 수",
+        "genre_first": "장르"
+    }
+)
+
+fig4.update_traces(
+    hovertemplate=(
+        "<b>%{hovertext}</b><br>"
+        "개봉일 스크린 수: %{x:,.0f}개<br>"
+        "총 관객: %{y:,.0f}명"
+        "<extra></extra>"
+    )
+)
+
+fig4.update_layout(
+    height=650,
+    xaxis_title="개봉일 스크린 수",
+    yaxis_title="총 관객 수",
+    legend_title_text="장르",
+    margin=dict(t=70, b=50, l=50, r=30)
+)
+
+st.plotly_chart(
+    fig4,
+    use_container_width=True
+)
+
+st.markdown("#### 💡 이 그래프로 알 수 있는 것")
+
+st.info(
+    "이곳에 이 그래프로 알 수 있는 내용을 적어 보세요."
 )
 
 
