@@ -300,6 +300,70 @@ st.info(
 
 
 # ==================================================
+# 다섯 번째 그래프
+# ==================================================
+st.divider()
+
+st.subheader("📦 그래프 5. 장르별 총 관객 분포")
+
+# 영화가 10편 이상인 장르 찾기
+genre_movie_counts = (
+    df["genre_first"]
+    .value_counts()
+)
+
+valid_genres = genre_movie_counts[
+    genre_movie_counts >= 10
+].index
+
+boxplot_df = df[
+    df["genre_first"].isin(valid_genres)
+].dropna(
+    subset=["total_audi_num", "movieNm", "genre_first"]
+).copy()
+
+fig5 = px.box(
+    boxplot_df,
+    x="genre_first",
+    y="total_audi_num",
+    points="outliers",
+    hover_name="movieNm",
+    title="영화가 10편 이상인 장르의 총 관객 분포",
+    labels={
+        "genre_first": "장르",
+        "total_audi_num": "총 관객 수"
+    }
+)
+
+fig5.update_traces(
+    hovertemplate=(
+        "<b>%{hovertext}</b><br>"
+        "장르: %{x}<br>"
+        "총 관객: %{y:,.0f}명"
+        "<extra></extra>"
+    )
+)
+
+fig5.update_layout(
+    height=650,
+    xaxis_title="장르",
+    yaxis_title="총 관객 수",
+    margin=dict(t=70, b=50, l=50, r=30)
+)
+
+st.plotly_chart(
+    fig5,
+    use_container_width=True
+)
+
+st.markdown("#### 💡 이 그래프로 알 수 있는 것")
+
+st.info(
+    "이곳에 이 그래프로 알 수 있는 내용을 적어 보세요."
+)
+
+
+# ==================================================
 # 데이터 확인
 # ==================================================
 with st.expander("📋 사용한 데이터 확인하기"):
