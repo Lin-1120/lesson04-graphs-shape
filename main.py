@@ -37,7 +37,7 @@ except Exception as e:
 # 데이터 전처리
 # --------------------------------------------------
 
-# genre에 여러 장르가 들어 있는 경우 첫 번째 장르만 사용
+# 장르가 여러 개이면 첫 번째 장르만 사용
 df["genre_first"] = (
     df["genre"]
     .fillna("기타")
@@ -47,16 +47,27 @@ df["genre_first"] = (
     .str.strip()
 )
 
-# 빈 장르는 기타로 처리
+# 비어 있는 장르는 기타로 처리
 df.loc[
     df["genre_first"].isin(["", "nan", "None"]),
     "genre_first"
 ] = "기타"
 
+# 총 관객 수를 숫자로 변환
+df["total_audi_num"] = pd.to_numeric(
+    df["total_audi"],
+    errors="coerce"
+)
 
-# --------------------------------------------------
+# 총 관객 수가 없는 행은 제외
+treemap_df = df.dropna(
+    subset=["total_audi_num", "movieNm", "genre_first"]
+).copy()
+
+
+# ==================================================
 # 첫 번째 그래프
-# --------------------------------------------------
+# ==================================================
 st.divider()
 
 st.subheader("📊 그래프 1. 장르별 영화 편수")
@@ -68,9 +79,7 @@ genre_counts = (
     .reset_index(name="영화 편수")
 )
 
-total_movies = genre_counts["영화 편수"].sum()
-
-fig = px.pie(
+fig1 = px.pie(
     genre_counts,
     names="장르",
     values="영화 편수",
@@ -78,7 +87,7 @@ fig = px.pie(
     title="장르별 영화 편수"
 )
 
-fig.update_traces(
+fig1.update_traces(
     textinfo="label+percent",
     hovertemplate=(
         "<b>%{label}</b><br>"
@@ -87,31 +96,66 @@ fig.update_traces(
     )
 )
 
-fig.update_layout(
+fig1.update_layout(
     height=550,
     margin=dict(t=70, b=30, l=30, r=30),
     legend_title_text="장르"
 )
 
 st.plotly_chart(
-    fig,
+    fig1,
     use_container_width=True
 )
 
-
-# --------------------------------------------------
-# 그래프로 알 수 있는 것
-# --------------------------------------------------
 st.markdown("#### 💡 이 그래프로 알 수 있는 것")
 
 st.info(
-    "이곳에 이 그래프를 통해 알 수 있는 내용을 적어 보세요."
+    "이곳에 이 그래프로 알 수 있는 내용을 적어 보세요."
 )
 
 
-# --------------------------------------------------
-# 데이터 간단히 확인
-# --------------------------------------------------
+# ==================================================
+# 두 번째 그래프
+# ==================================================
+st.divider()
+
+st.subheader("🌳 그래프 2. 장르별 영화와 총 관객")
+
+fig2 = px.treemap(
+    treemap_df,
+    path=["genre_first", "movieNm"],
+    values="total_audi_num",
+    title="장르 안에 들어 있는 영화별 총 관객",
+)
+
+fig2.update_traces(
+    hovertemplate=(
+        "<b>%{label}</b><br>"
+        "총 관객: %{value:,.0f}명"
+        "<extra></extra>"
+    )
+)
+
+fig2.update_layout(
+    height=700,
+    margin=dict(t=70, b=30, l=20, r=20)
+)
+
+st.plotly_chart(
+    fig2,
+    use_container_width=True
+)
+
+st.markdown("#### 💡 이 그래프로 알 수 있는 것")
+
+st.info(
+    "이곳에 이 그래프로 알 수 있는 내용을 적어 보세요."
+)
+
+
+# ==================================================
+# 데이터 확인
+# ==================================================
 with st.expander("📋 사용한 데이터 확인하기"):
     st.dataframe(
         df[
