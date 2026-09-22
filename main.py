@@ -3,9 +3,9 @@ import pandas as pd
 import plotly.express as px
 
 
-# --------------------------------------------------
+# ==================================================
 # 페이지 설정
-# --------------------------------------------------
+# ==================================================
 st.set_page_config(
     page_title="영화 데이터 그래프 도감 2 - 분포와 관계",
     page_icon="🎬",
@@ -13,17 +13,20 @@ st.set_page_config(
 )
 
 
-# --------------------------------------------------
+# ==================================================
 # 제목
-# --------------------------------------------------
+# ==================================================
 st.title("🎬 영화 데이터 그래프 도감 2 - 분포와 관계")
 st.write("1년간 박스오피스 10위권에 든 영화들의 데이터를 그래프로 살펴봅니다.")
 
 
-# --------------------------------------------------
+# ==================================================
 # 데이터 불러오기
-# --------------------------------------------------
-DATA_URL = "https://raw.githubusercontent.com/greatsong/modudata/main/data/kobis_movies.csv"
+# ==================================================
+DATA_URL = (
+    "https://raw.githubusercontent.com/greatsong/modudata/"
+    "main/data/kobis_movies.csv"
+)
 
 try:
     df = pd.read_csv(DATA_URL, encoding="utf-8-sig")
@@ -33,11 +36,11 @@ except Exception as e:
     st.stop()
 
 
-# --------------------------------------------------
+# ==================================================
 # 데이터 전처리
-# --------------------------------------------------
+# ==================================================
 
-# 장르가 여러 개이면 첫 번째 장르만 사용
+# 여러 장르가 있으면 첫 번째 장르만 사용
 df["genre_first"] = (
     df["genre"]
     .fillna("기타")
@@ -47,13 +50,14 @@ df["genre_first"] = (
     .str.strip()
 )
 
-# 비어 있는 장르는 기타로 처리
+# 빈 장르는 기타로 처리
 df.loc[
     df["genre_first"].isin(["", "nan", "None"]),
     "genre_first"
 ] = "기타"
 
-# 숫자형 데이터로 변환
+
+# 숫자형으로 변환
 df["total_audi_num"] = pd.to_numeric(
     df["total_audi"],
     errors="coerce"
@@ -64,9 +68,15 @@ df["first_scrn_num"] = pd.to_numeric(
     errors="coerce"
 )
 
+df["first_week_audi_num"] = pd.to_numeric(
+    df["first_week_audi"],
+    errors="coerce"
+)
+
 
 # ==================================================
-# 첫 번째 그래프
+# 그래프 1
+# 장르별 영화 편수 도넛 그래프
 # ==================================================
 st.divider()
 
@@ -92,7 +102,8 @@ fig1.update_traces(
     hovertemplate=(
         "<b>%{label}</b><br>"
         "영화 편수: %{value}편<br>"
-        "비율: %{percent}<extra></extra>"
+        "비율: %{percent}"
+        "<extra></extra>"
     )
 )
 
@@ -115,14 +126,19 @@ st.info(
 
 
 # ==================================================
-# 두 번째 그래프
+# 그래프 2
+# 장르별 영화 트리맵
 # ==================================================
 st.divider()
 
 st.subheader("🌳 그래프 2. 장르별 영화와 총 관객")
 
 treemap_df = df.dropna(
-    subset=["total_audi_num", "movieNm", "genre_first"]
+    subset=[
+        "total_audi_num",
+        "movieNm",
+        "genre_first"
+    ]
 ).copy()
 
 fig2 = px.treemap(
@@ -158,7 +174,8 @@ st.info(
 
 
 # ==================================================
-# 세 번째 그래프
+# 그래프 3
+# 총 관객 히스토그램
 # ==================================================
 st.divider()
 
@@ -201,7 +218,7 @@ st.plotly_chart(
 
 
 # --------------------------------------------------
-# 히스토그램에서 가장 많이 몰린 구간 계산
+# 가장 많은 영화가 몰린 구간 계산
 # --------------------------------------------------
 bins = pd.cut(
     hist_df["total_audi_num"],
@@ -214,7 +231,10 @@ bin_counts = bins.value_counts().sort_index()
 most_common_bin = bin_counts.idxmax()
 most_common_count = bin_counts.max()
 
-# 가장 관객이 많은 영화
+
+# --------------------------------------------------
+# 가장 관객이 많은 영화 계산
+# --------------------------------------------------
 max_audi = hist_df["total_audi_num"].max()
 
 top_movies = hist_df[
@@ -226,22 +246,21 @@ top_movie_names = ", ".join(
 )
 
 
-# --------------------------------------------------
-# 그래프로 알 수 있는 것
-# --------------------------------------------------
 st.markdown("#### 💡 이 그래프로 알 수 있는 것")
 
 st.info(
     f"대부분의 영화는 총 관객 수가 "
-    f"**{most_common_bin.left:,.0f}명~{most_common_bin.right:,.0f}명** "
-    f"구간에 몰려 있으며, 이 구간에는 **{most_common_count}편**의 영화가 있습니다. "
+    f"**{most_common_bin.left:,.0f}명~"
+    f"{most_common_bin.right:,.0f}명** 구간에 몰려 있으며, "
+    f"이 구간에는 **{most_common_count}편**의 영화가 있습니다. "
     f"가장 관객이 많은 영화는 **{top_movie_names}**으로, "
     f"총 관객은 **{max_audi:,.0f}명**입니다."
 )
 
 
 # ==================================================
-# 네 번째 그래프
+# 그래프 4
+# 개봉일 스크린 수와 총 관객 산점도
 # ==================================================
 st.divider()
 
@@ -273,6 +292,7 @@ fig4 = px.scatter(
 fig4.update_traces(
     hovertemplate=(
         "<b>%{hovertext}</b><br>"
+        "장르: %{marker.color}<br>"
         "개봉일 스크린 수: %{x:,.0f}개<br>"
         "총 관객: %{y:,.0f}명"
         "<extra></extra>"
@@ -300,17 +320,15 @@ st.info(
 
 
 # ==================================================
-# 다섯 번째 그래프
+# 그래프 5
+# 장르별 총 관객 박스플롯
 # ==================================================
 st.divider()
 
 st.subheader("📦 그래프 5. 장르별 총 관객 분포")
 
-# 영화가 10편 이상인 장르 찾기
-genre_movie_counts = (
-    df["genre_first"]
-    .value_counts()
-)
+# 영화가 10편 이상인 장르만 선택
+genre_movie_counts = df["genre_first"].value_counts()
 
 valid_genres = genre_movie_counts[
     genre_movie_counts >= 10
@@ -319,7 +337,11 @@ valid_genres = genre_movie_counts[
 boxplot_df = df[
     df["genre_first"].isin(valid_genres)
 ].dropna(
-    subset=["total_audi_num", "movieNm", "genre_first"]
+    subset=[
+        "total_audi_num",
+        "movieNm",
+        "genre_first"
+    ]
 ).copy()
 
 fig5 = px.box(
@@ -364,7 +386,80 @@ st.info(
 
 
 # ==================================================
-# 데이터 확인
+# 그래프 6
+# 첫 주 관객을 점 크기로 넣은 버블 그래프
+# ==================================================
+st.divider()
+
+st.subheader(
+    "🫧 그래프 6. 개봉일 스크린 수와 총 관객 "
+    "— 첫 주 관객 버블"
+)
+
+bubble_df = df.dropna(
+    subset=[
+        "first_scrn_num",
+        "total_audi_num",
+        "first_week_audi_num",
+        "movieNm",
+        "genre_first"
+    ]
+).copy()
+
+fig6 = px.scatter(
+    bubble_df,
+    x="first_scrn_num",
+    y="total_audi_num",
+    size="first_week_audi_num",
+    color="genre_first",
+    hover_name="movieNm",
+    custom_data=[
+        "genre_first",
+        "first_week_audi_num"
+    ],
+    size_max=55,
+    title="개봉일 스크린 수와 총 관객의 관계",
+    labels={
+        "first_scrn_num": "개봉일 스크린 수",
+        "total_audi_num": "총 관객 수",
+        "first_week_audi_num": "첫 주 관객",
+        "genre_first": "장르"
+    }
+)
+
+fig6.update_traces(
+    hovertemplate=(
+        "<b>%{hovertext}</b><br>"
+        "장르: %{customdata[0]}<br>"
+        "개봉일 스크린 수: %{x:,.0f}개<br>"
+        "총 관객: %{y:,.0f}명<br>"
+        "첫 주 관객: %{customdata[1]:,.0f}명"
+        "<extra></extra>"
+    )
+)
+
+fig6.update_layout(
+    height=650,
+    xaxis_title="개봉일 스크린 수",
+    yaxis_title="총 관객 수",
+    legend_title_text="장르",
+    margin=dict(t=70, b=50, l=50, r=30)
+)
+
+st.plotly_chart(
+    fig6,
+    use_container_width=True
+)
+
+st.markdown("#### 💡 이 그래프로 알 수 있는 것")
+
+st.info(
+    "이곳에 이 그래프로 알 수 있는 내용을 적어 보세요."
+)
+
+
+# ==================================================
+# 원본 데이터 확인
 # ==================================================
 with st.expander("📋 사용한 데이터 확인하기"):
     st.dataframe(
