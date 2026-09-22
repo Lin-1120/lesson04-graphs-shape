@@ -56,6 +56,19 @@ df.loc[
     "genre_first"
 ] = "기타"
 
+# 제작 국가가 비어 있으면 기타로 처리
+df["nation_clean"] = (
+    df["nation"]
+    .fillna("기타")
+    .astype(str)
+    .str.strip()
+)
+
+df.loc[
+    df["nation_clean"].isin(["", "nan", "None"]),
+    "nation_clean"
+] = "기타"
+
 
 # 숫자형으로 변환
 df["total_audi_num"] = pd.to_numeric(
@@ -281,6 +294,7 @@ fig4 = px.scatter(
     y="total_audi_num",
     color="genre_first",
     hover_name="movieNm",
+    custom_data=["genre_first"],
     title="개봉일 스크린 수와 총 관객",
     labels={
         "first_scrn_num": "개봉일 스크린 수",
@@ -292,7 +306,7 @@ fig4 = px.scatter(
 fig4.update_traces(
     hovertemplate=(
         "<b>%{hovertext}</b><br>"
-        "장르: %{marker.color}<br>"
+        "장르: %{customdata[0]}<br>"
         "개봉일 스크린 수: %{x:,.0f}개<br>"
         "총 관객: %{y:,.0f}명"
         "<extra></extra>"
@@ -350,6 +364,7 @@ fig5 = px.box(
     y="total_audi_num",
     points="outliers",
     hover_name="movieNm",
+    custom_data=["genre_first"],
     title="영화가 10편 이상인 장르의 총 관객 분포",
     labels={
         "genre_first": "장르",
@@ -360,7 +375,7 @@ fig5 = px.box(
 fig5.update_traces(
     hovertemplate=(
         "<b>%{hovertext}</b><br>"
-        "장르: %{x}<br>"
+        "장르: %{customdata[0]}<br>"
         "총 관객: %{y:,.0f}명"
         "<extra></extra>"
     )
@@ -448,6 +463,64 @@ fig6.update_layout(
 
 st.plotly_chart(
     fig6,
+    use_container_width=True
+)
+
+st.markdown("#### 💡 이 그래프로 알 수 있는 것")
+
+st.info(
+    "이곳에 이 그래프로 알 수 있는 내용을 적어 보세요."
+)
+
+
+# ==================================================
+# 그래프 7
+# 제작 국가 → 장르 선버스트
+# ==================================================
+st.divider()
+
+st.subheader("☀️ 그래프 7. 제작 국가에서 장르로 내려가는 영화 구성")
+
+sunburst_df = df[
+    [
+        "nation_clean",
+        "genre_first"
+    ]
+].copy()
+
+# 국가와 장르별 영화 편수를 계산
+sunburst_counts = (
+    sunburst_df
+    .groupby(
+        ["nation_clean", "genre_first"],
+        as_index=False
+    )
+    .size()
+    .rename(columns={"size": "영화 편수"})
+)
+
+fig7 = px.sunburst(
+    sunburst_counts,
+    path=["nation_clean", "genre_first"],
+    values="영화 편수",
+    title="제작 국가 → 장르별 영화 편수"
+)
+
+fig7.update_traces(
+    hovertemplate=(
+        "<b>%{label}</b><br>"
+        "영화 편수: %{value}편"
+        "<extra></extra>"
+    )
+)
+
+fig7.update_layout(
+    height=700,
+    margin=dict(t=70, b=30, l=20, r=20)
+)
+
+st.plotly_chart(
+    fig7,
     use_container_width=True
 )
 
